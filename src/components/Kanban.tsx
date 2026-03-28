@@ -259,11 +259,18 @@ export default function Kanban() {
                       </button>
                     </div>
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
-                      <div
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: PRIORITY_COLORS[task.priority] }}
-                        title={task.priority}
-                      />
+                      {task.completedAt ? (
+                        <span className="flex items-center gap-1 text-xs text-green-500 font-medium">
+                          <span className="w-2 h-2 rounded-full bg-green-500" />
+                          Done!
+                        </span>
+                      ) : (
+                        <div
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: PRIORITY_COLORS[task.priority] }}
+                          title={task.priority}
+                        />
+                      )}
                       {task.dueDate && (
                         <span className="text-xs text-neutral-500">{formatDate(task.dueDate)}</span>
                       )}
