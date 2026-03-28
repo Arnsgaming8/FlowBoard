@@ -37,6 +37,16 @@ export interface Note {
   updatedAt: string;
 }
 
+export type ReminderMinutes = 0 | 5 | 15 | 30 | 60;
+
+export const REMINDER_OPTIONS: { value: ReminderMinutes; label: string }[] = [
+  { value: 0, label: "At time of event" },
+  { value: 5, label: "5 minutes before" },
+  { value: 15, label: "15 minutes before" },
+  { value: 30, label: "30 minutes before" },
+  { value: 60, label: "1 hour before" },
+];
+
 export interface CalendarEvent {
   id: string;
   title: string;
@@ -44,6 +54,7 @@ export interface CalendarEvent {
   time: string;
   color: string;
   description: string;
+  reminderMinutes: ReminderMinutes;
 }
 
 export interface PomodoroSession {

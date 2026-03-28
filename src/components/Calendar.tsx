@@ -3,8 +3,9 @@
 import { useState, useMemo, useEffect, startTransition } from "react";
 import { useApp } from "@/lib/store";
 import { uid, getDaysInMonth, getFirstDayOfMonth } from "@/lib/utils";
-import { EVENT_COLORS } from "@/lib/types";
-import type { CalendarEvent } from "@/lib/types";
+import { EVENT_COLORS, REMINDER_OPTIONS } from "@/lib/types";
+import { useEventNotifications } from "@/lib/useEventNotifications";
+import type { CalendarEvent, ReminderMinutes } from "@/lib/types";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -31,6 +32,8 @@ export default function Calendar() {
   }, []);
 
   const todayStr = mounted ? new Date().toISOString().slice(0, 10) : "";
+
+  useEventNotifications(state.events);
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
@@ -277,6 +280,7 @@ function EventForm({
   const [time, setTime] = useState(event?.time || "");
   const [color, setColor] = useState(event?.color || EVENT_COLORS[0]);
   const [description, setDescription] = useState(event?.description || "");
+  const [reminderMinutes, setReminderMinutes] = useState<ReminderMinutes>(event?.reminderMinutes ?? 0);
 
   const save = () => {
     if (!title.trim()) return;
@@ -287,6 +291,7 @@ function EventForm({
       time,
       color,
       description,
+      reminderMinutes,
     });
   };
 
@@ -350,6 +355,20 @@ function EventForm({
               rows={2}
               className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg outline-none focus:border-indigo-500 text-sm resize-none"
             />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-neutral-500 mb-1 block">Reminder</label>
+            <select
+              value={reminderMinutes}
+              onChange={(e) => setReminderMinutes(Number(e.target.value) as ReminderMinutes)}
+              className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg outline-none focus:border-indigo-500 text-sm"
+            >
+              {REMINDER_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
         <div className="flex justify-end gap-2 mt-6">
