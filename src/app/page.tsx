@@ -10,10 +10,13 @@ import Notes from "@/components/Notes";
 import Calendar from "@/components/Calendar";
 import Pomodoro from "@/components/Pomodoro";
 import Analytics from "@/components/Analytics";
+import { useHighPriorityReminders } from "@/lib/useHighPriorityReminders";
 import type { View } from "@/lib/types";
 
 function AppContent() {
   const { state } = useApp();
+
+  useHighPriorityReminders(state.boards);
 
   const views: Record<View, React.ReactNode> = {
     dashboard: <Dashboard />,
