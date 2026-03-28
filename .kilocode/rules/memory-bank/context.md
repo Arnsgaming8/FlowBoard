@@ -1,87 +1,62 @@
-# Active Context: Next.js Starter Template
+# Active Context: FlowBoard Productivity Suite
 
 ## Current State
 
-**Template Status**: ✅ Ready for development
+**Status**: ✅ Fully built and operational
 
-The template is a clean Next.js 16 starter with TypeScript and Tailwind CSS 4. It's ready for AI-assisted expansion to build any type of application.
+FlowBoard is a comprehensive, fully client-side productivity suite built on Next.js 16 with static export for GitHub Pages. No backend required - all data persisted to localStorage.
 
 ## Recently Completed
 
-- [x] Base Next.js 16 setup with App Router
-- [x] TypeScript configuration with strict mode
-- [x] Tailwind CSS 4 integration
-- [x] ESLint configuration
-- [x] Memory bank documentation
-- [x] Recipe system for common features
+- [x] Full project build with 6 views: Dashboard, Kanban, Notes, Calendar, Pomodoro, Analytics
+- [x] Static export configuration for GitHub Pages (`output: "export"`)
+- [x] Global state management with React useReducer + localStorage persistence
+- [x] Kanban board with HTML5 drag-and-drop, multi-board support, task CRUD
+- [x] Markdown notes editor with live preview, folders, tags, search
+- [x] Calendar with month grid, event management, color coding
+- [x] Pomodoro timer with Web Audio API notifications, session tracking
+- [x] Analytics dashboard with custom SVG charts (donut, bar, grouped bar)
+- [x] Command palette (⌘K) with keyboard navigation
+- [x] Dark/light mode toggle
+- [x] Data export/import (JSON backup, CSV export)
+- [x] Responsive sidebar with collapsible navigation
+- [x] Toast notification system
+- [x] TypeScript strict mode, ESLint passing, production build
 
-## Current Structure
+## Project Structure
 
-| File/Directory | Purpose | Status |
-|----------------|---------|--------|
-| `src/app/page.tsx` | Home page | ✅ Ready |
-| `src/app/layout.tsx` | Root layout | ✅ Ready |
-| `src/app/globals.css` | Global styles | ✅ Ready |
-| `.kilocode/` | AI context & recipes | ✅ Ready |
+| File/Directory | Purpose |
+|---|---|
+| `src/app/page.tsx` | Root page - wires AppProvider + all views |
+| `src/app/layout.tsx` | HTML shell with dark mode support |
+| `src/app/globals.css` | Tailwind + custom animations |
+| `src/lib/types.ts` | All TypeScript types + defaults |
+| `src/lib/store.tsx` | AppProvider, useReducer, localStorage persistence |
+| `src/lib/utils.ts` | uid, date helpers, markdown parser, export/import |
+| `src/components/Sidebar.tsx` | Navigation sidebar with data controls |
+| `src/components/CommandPalette.tsx` | ⌘K command palette |
+| `src/components/Toast.tsx` | Toast notification provider |
+| `src/components/Dashboard.tsx` | Overview with stats, charts, recent activity |
+| `src/components/Kanban.tsx` | Multi-board kanban with drag-and-drop |
+| `src/components/Notes.tsx` | Markdown notes with sidebar, folders, preview |
+| `src/components/Calendar.tsx` | Month calendar with event management |
+| `src/components/Pomodoro.tsx` | Focus timer with circular progress |
+| `src/components/Analytics.tsx` | Charts: donut, bar, grouped bar, SVG |
 
-## Current Focus
+## Architecture Notes
 
-The template is ready. Next steps depend on user requirements:
-
-1. What type of application to build
-2. What features are needed
-3. Design/branding preferences
-
-## Quick Start Guide
-
-### To add a new page:
-
-Create a file at `src/app/[route]/page.tsx`:
-```tsx
-export default function NewPage() {
-  return <div>New page content</div>;
-}
-```
-
-### To add components:
-
-Create `src/components/` directory and add components:
-```tsx
-// src/components/ui/Button.tsx
-export function Button({ children }: { children: React.ReactNode }) {
-  return <button className="px-4 py-2 bg-blue-600 text-white rounded">{children}</button>;
-}
-```
-
-### To add a database:
-
-Follow `.kilocode/recipes/add-database.md`
-
-### To add API routes:
-
-Create `src/app/api/[route]/route.ts`:
-```tsx
-import { NextResponse } from "next/server";
-
-export async function GET() {
-  return NextResponse.json({ message: "Hello" });
-}
-```
-
-## Available Recipes
-
-| Recipe | File | Use Case |
-|--------|------|----------|
-| Add Database | `.kilocode/recipes/add-database.md` | Data persistence with Drizzle + SQLite |
-
-## Pending Improvements
-
-- [ ] Add more recipes (auth, email, etc.)
-- [ ] Add example components
-- [ ] Add testing setup recipe
+- **Zero dependencies**: Only Next.js, React, Tailwind (no chart libs, no drag libs, no markdown libs)
+- **Client-side only**: `"use client"` on all interactive components
+- **Persistence**: localStorage with key `flowboard-state`
+- **State**: Single useReducer in AppProvider, dispatched via context
+- **Drag-and-drop**: Native HTML5 drag API (no react-dnd)
+- **Markdown**: Custom regex-based parser (no marked/remark)
+- **Charts**: Custom SVG (no recharts/chart.js)
+- **Audio**: Web Audio API oscillator for pomodoro alerts
+- **Static export**: `next.config.ts` has `output: "export"` for GitHub Pages
 
 ## Session History
 
 | Date | Changes |
 |------|---------|
-| Initial | Template created with base setup |
+| 2026-03-28 | Built entire FlowBoard productivity suite from template |
