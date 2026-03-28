@@ -102,7 +102,6 @@ export default function Pomodoro() {
 
   const onCompleteRef = useRef(completeSession);
   useEffect(() => { onCompleteRef.current = completeSession; }, [completeSession]);
-  const completedRef = useRef(false);
 
   useEffect(() => {
     if (!isRunning) {
@@ -112,14 +111,14 @@ export default function Pomodoro() {
       }
       return;
     }
-    completedRef.current = false;
     intervalRef.current = setInterval(() => {
       setTimeLeft((t) => {
         if (t <= 1) {
-          if (!completedRef.current) {
-            completedRef.current = true;
-            onCompleteRef.current();
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
           }
+          onCompleteRef.current();
           return 0;
         }
         return t - 1;
