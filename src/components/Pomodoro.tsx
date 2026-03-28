@@ -21,10 +21,19 @@ export default function Pomodoro() {
   const [taskTitle, setTaskTitle] = useState("");
   const [sessionsCount, setSessionsCount] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const preset = presets[timerType];
   const progress = 1 - timeLeft / preset.duration;
+
+  const presetsRef = useRef(presets);
+  const timerTypeRef = useRef(timerType);
+  const taskTitleRef = useRef(taskTitle);
+  const sessionsCountRef = useRef(sessionsCount);
+
+  useEffect(() => { presetsRef.current = presets; }, [presets]);
+  useEffect(() => { timerTypeRef.current = timerType; }, [timerType]);
+  useEffect(() => { taskTitleRef.current = taskTitle; }, [taskTitle]);
+  useEffect(() => { sessionsCountRef.current = sessionsCount; }, [sessionsCount]);
 
   const playSound = useCallback(() => {
     try {
@@ -56,6 +65,11 @@ export default function Pomodoro() {
   }, []);
 
   const completeSession = useCallback(() => {
+    const p = presetsRef.current;
+    const type = timerTypeRef.current;
+    const title = taskTitleRef.current;
+    const count = sessionsCountRef.current;
+
     setIsRunning(false);
     playSound();
     setSessionsCount((c) => c + 1);
@@ -64,33 +78,31 @@ export default function Pomodoro() {
       type: "ADD_POMODORO_SESSION",
       payload: {
         id: uid(),
-        taskId: taskTitle || "untitled",
-        taskTitle: taskTitle || "Focus Session",
-        duration: presets[timerType].duration,
-        type: timerType,
+        taskId: title || "untitled",
+        taskTitle: title || "Focus Session",
+        duration: p[type].duration,
+        type,
         completedAt: new Date().toISOString(),
       },
     });
 
-    if (timerType === "work") {
-      if ((sessionsCount + 1) % 4 === 0) {
+    if (type === "work") {
+      if ((count + 1) % 4 === 0) {
         setTimerType("longBreak");
-        setTimeLeft(presets.longBreak.duration);
+        setTimeLeft(p.longBreak.duration);
       } else {
         setTimerType("shortBreak");
-        setTimeLeft(presets.shortBreak.duration);
+        setTimeLeft(p.shortBreak.duration);
       }
     } else {
       setTimerType("work");
-      setTimeLeft(presets.work.duration);
+      setTimeLeft(p.work.duration);
     }
-  }, [playSound, dispatch, taskTitle, presets, timerType, sessionsCount]);
+  }, [playSound, dispatch]);
 
   const onCompleteRef = useRef(completeSession);
-
-  useEffect(() => {
-    onCompleteRef.current = completeSession;
-  }, [completeSession]);
+  useEffect(() => { onCompleteRef.current = completeSession; }, [completeSession]);
+  const completedRef = useRef(false);
 
   useEffect(() => {
     if (!isRunning) {
@@ -100,10 +112,14 @@ export default function Pomodoro() {
       }
       return;
     }
+    completedRef.current = false;
     intervalRef.current = setInterval(() => {
       setTimeLeft((t) => {
         if (t <= 1) {
-          onCompleteRef.current();
+          if (!completedRef.current) {
+            completedRef.current = true;
+            onCompleteRef.current();
+          }
           return 0;
         }
         return t - 1;
@@ -217,7 +233,7 @@ export default function Pomodoro() {
                 strokeLinecap="round"
                 strokeDasharray={circumference}
                 strokeDashoffset={strokeDashoffset}
-                className="transition-all duration-1000"
+                className="transition-[stroke-dashoffset] duration-700 ease-linear"
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
