@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "FlowBoard — Productivity Suite",
   description: "Kanban boards, notes, calendar, pomodoro — all in your browser, no backend needed.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
