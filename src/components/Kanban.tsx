@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useApp } from "@/lib/store";
 import { uid, formatDate } from "@/lib/utils";
 import { DEFAULT_COLUMNS, PRIORITY_COLORS } from "@/lib/types";
@@ -10,7 +10,7 @@ export default function Kanban() {
   const { state, dispatch } = useApp();
   const [dragInfo, setDragInfo] = useState<{ taskId: string; fromCol: string } | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
-  const [editingTask, setEditingTask] = useState<{ boardId: string; columnId: string; task: Task } | null>(null);
+  const [editingTask, setEditingTask] = useState<{ boardId: string; columnId: string; task: Task; isNew?: boolean } | null>(null);
   const [addingTaskCol, setAddingTaskCol] = useState<string | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [showNewBoard, setShowNewBoard] = useState(false);
@@ -48,6 +48,7 @@ export default function Kanban() {
     dispatch({ type: "ADD_TASK", payload: { boardId: activeBoard.id, columnId, task } });
     setNewTaskTitle("");
     setAddingTaskCol(null);
+    setEditingTask({ boardId: activeBoard.id, columnId, task, isNew: true });
   };
 
   const handleDragStart = (taskId: string, fromCol: string) => {
@@ -339,6 +340,7 @@ export default function Kanban() {
       {editingTask && (
         <TaskModal
           task={editingTask.task}
+          isNew={editingTask.isNew}
           onSave={(task) => {
             dispatch({
               type: "UPDATE_TASK",
@@ -422,11 +424,13 @@ function BoardModal({
 
 function TaskModal({
   task,
+  isNew,
   onSave,
   onClose,
   onToggleComplete,
 }: {
   task: Task;
+  isNew?: boolean;
   onSave: (task: Task) => void;
   onClose: () => void;
   onToggleComplete: () => void;
@@ -437,6 +441,25 @@ function TaskModal({
   const [dueDate, setDueDate] = useState(task.dueDate || "");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>(task.tags);
+  const [loading, setLoading] = useState(!!isNew);
+
+  useEffect(() => {
+    if (!isNew) return;
+    const timer = setTimeout(() => setLoading(false), 2000);
+    return () => clearTimeout(timer);
+  }, [isNew]);
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+        <div className="relative bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl p-8 w-full max-w-lg animate-scaleIn flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+          <p className="text-sm text-neutral-500">Preparing your task...</p>
+        </div>
+      </div>
+    );
+  }
 
   const addTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
