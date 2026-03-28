@@ -39,7 +39,7 @@ export function useHighPriorityReminders(boards: Board[]) {
     swRegistered.current = true;
 
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/FlowBoard/sw.js").then(() => {
+      navigator.serviceWorker.register("/FlowBoard/sw.js", { scope: "/FlowBoard/" }).then(() => {
         if ("Notification" in window && Notification.permission === "default") {
           Notification.requestPermission();
         }
@@ -85,16 +85,19 @@ export function useHighPriorityReminders(boards: Board[]) {
         if ("Notification" in window && Notification.permission === "granted") {
           try {
             const registration = await navigator.serviceWorker.ready;
-            await registration.showNotification("High Priority Task", {
+            const options: Record<string, unknown> = {
               body: `"${title}" in ${boardName} needs your attention!`,
+              icon: "/FlowBoard/favicon.svg",
               tag: `priority-${taskId}`,
+              renotify: true,
               requireInteraction: true,
               data: { taskId },
               actions: [
                 { action: "dismiss", title: "I'll Do It" },
                 { action: "snooze", title: "I Know, Wait!" },
               ],
-            } as NotificationOptions & { actions: { action: string; title: string }[] });
+            };
+            await registration.showNotification("High Priority Task", options as NotificationOptions);
           } catch {
             new Notification("High Priority Task", {
               body: `"${title}" in ${boardName} needs your attention!`,
