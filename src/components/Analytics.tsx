@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useEffect, useMemo, startTransition } from "react";
 import { useApp } from "@/lib/store";
 import { exportCSV } from "@/lib/utils";
 import { PRIORITY_COLORS } from "@/lib/types";
 
 export default function Analytics() {
   const { state } = useApp();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => startTransition(() => setMounted(true)), []);
 
   const allTasks = state.boards.flatMap((b) => b.columns.flatMap((c) => c.tasks));
   const completed = allTasks.filter((t) => t.completedAt);
@@ -34,6 +36,7 @@ export default function Analytics() {
 
   // Tasks per day (last 14 days)
   const dailyData = useMemo(() => {
+    if (!mounted) return Array.from({ length: 14 }, (_, i) => ({ date: "", day: "", created: 0, completed: 0 }));
     return Array.from({ length: 14 }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - (13 - i));
@@ -42,12 +45,13 @@ export default function Analytics() {
       const comp = completed.filter((t) => t.completedAt?.startsWith(dayStr)).length;
       return { date: dayStr, day: d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }), created, completed: comp };
     });
-  }, [allTasks, completed]);
+  }, [allTasks, completed, mounted]);
 
   const maxDaily = Math.max(...dailyData.map((d) => Math.max(d.created, d.completed)), 1);
 
   // Pomodoro data (last 7 days)
   const pomodoroData = useMemo(() => {
+    if (!mounted) return Array.from({ length: 7 }, () => ({ day: "", minutes: 0 }));
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - (6 - i));
@@ -58,7 +62,7 @@ export default function Analytics() {
         minutes: sessions.reduce((s, p) => s + p.duration / 60, 0),
       };
     });
-  }, [state.pomodoroSessions]);
+  }, [state.pomodoroSessions, mounted]);
   const maxPomodoro = Math.max(...pomodoroData.map((d) => d.minutes), 1);
 
   // Tag distribution

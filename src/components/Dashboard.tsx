@@ -1,33 +1,48 @@
 "use client";
 
+import { useState, useEffect, useMemo, startTransition } from "react";
 import { useApp } from "@/lib/store";
 import { formatDate } from "@/lib/utils";
 import { PRIORITY_COLORS } from "@/lib/types";
 import type { Task } from "@/lib/types";
 
+function useMounted() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => startTransition(() => setMounted(true)), []);
+  return mounted;
+}
+
 export default function Dashboard() {
   const { state, dispatch, setView } = useApp();
+  const mounted = useMounted();
 
   const allTasks = state.boards.flatMap((b) => b.columns.flatMap((c) => c.tasks));
   const completedTasks = allTasks.filter((t) => t.completedAt);
   const pendingTasks = allTasks.filter((t) => !t.completedAt);
   const highPriority = pendingTasks.filter((t) => t.priority === "high");
-  const overdueTasks = pendingTasks.filter(
-    (t) => t.dueDate && new Date(t.dueDate) < new Date(new Date().toDateString())
-  );
 
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const todayEvents = state.events.filter((e) => e.date === todayStr);
-
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (6 - i));
-    return d.toISOString().slice(0, 10);
-  });
-  const tasksPerDay = last7Days.map(
-    (day) => completedTasks.filter((t) => t.completedAt?.startsWith(day)).length
-  );
-  const maxPerDay = Math.max(...tasksPerDay, 1);
+  const { overdueTasks, todayEvents, tasksPerDay, maxPerDay, last7Days } = useMemo(() => {
+    if (!mounted) {
+      return { overdueTasks: [], todayEvents: [], tasksPerDay: [0, 0, 0, 0, 0, 0, 0], maxPerDay: 1, last7Days: [] as string[] };
+    }
+    const now = new Date();
+    const todayStart = new Date(now.toDateString());
+    const overdue = pendingTasks.filter(
+      (t) => t.dueDate && new Date(t.dueDate) < todayStart
+    );
+    const todayStr = now.toISOString().slice(0, 10);
+    const events = state.events.filter((e) => e.date === todayStr);
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      return d.toISOString().slice(0, 10);
+    });
+    const perDay = days.map(
+      (day) => completedTasks.filter((t) => t.completedAt?.startsWith(day)).length
+    );
+    const max = Math.max(...perDay, 1);
+    return { overdueTasks: overdue, todayEvents: events, tasksPerDay: perDay, maxPerDay: max, last7Days: days };
+  }, [mounted, pendingTasks, state.events, completedTasks]);
 
   const recentNotes = [...state.notes]
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
@@ -68,7 +83,9 @@ export default function Dashboard() {
         <h3 className="text-sm font-semibold mb-4">Tasks Completed (Last 7 Days)</h3>
         <div className="flex items-end gap-2 h-32">
           {tasksPerDay.map((count, i) => {
-            const d = new Date(last7Days[i]);
+            const label = last7Days[i]
+              ? weekDays[new Date(last7Days[i]).getDay()]
+              : "\u00a0";
             return (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
                 <div className="w-full flex flex-col items-center justify-end h-24">
@@ -77,7 +94,7 @@ export default function Dashboard() {
                     style={{ height: `${(count / maxPerDay) * 100}%`, minHeight: count > 0 ? "4px" : "0" }}
                   />
                 </div>
-                <span className="text-xs text-neutral-500">{weekDays[d.getDay()]}</span>
+                <span className="text-xs text-neutral-500">{label}</span>
               </div>
             );
           })}

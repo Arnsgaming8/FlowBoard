@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, startTransition } from "react";
 import { useApp } from "@/lib/store";
-import { uid, getDaysInMonth, getFirstDayOfMonth, isSameDay } from "@/lib/utils";
+import { uid, getDaysInMonth, getFirstDayOfMonth } from "@/lib/utils";
 import { EVENT_COLORS } from "@/lib/types";
 import type { CalendarEvent } from "@/lib/types";
 
@@ -13,19 +13,30 @@ const MONTH_NAMES = [
 
 export default function Calendar() {
   const { state, dispatch } = useApp();
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth());
-  const [selectedDate, setSelectedDate] = useState<string>(now.toISOString().slice(0, 10));
+  const [year, setYear] = useState(2024);
+  const [month, setMonth] = useState(0);
+  const [selectedDate, setSelectedDate] = useState("2024-01-01");
   const [showEventForm, setShowEventForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    startTransition(() => {
+      setMounted(true);
+      const now = new Date();
+      setYear(now.getFullYear());
+      setMonth(now.getMonth());
+      setSelectedDate(now.toISOString().slice(0, 10));
+    });
+  }, []);
+
+  const todayStr = mounted ? new Date().toISOString().slice(0, 10) : "";
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
 
   const days = useMemo(() => {
     const result: { date: string; day: number; isCurrentMonth: boolean }[] = [];
-    // Previous month padding
     const prevMonthDays = getDaysInMonth(month === 0 ? year - 1 : year, month === 0 ? 11 : month - 1);
     for (let i = firstDay - 1; i >= 0; i--) {
       result.push({
@@ -34,7 +45,6 @@ export default function Calendar() {
         isCurrentMonth: false,
       });
     }
-    // Current month
     for (let d = 1; d <= daysInMonth; d++) {
       result.push({
         date: `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`,
@@ -42,7 +52,6 @@ export default function Calendar() {
         isCurrentMonth: true,
       });
     }
-    // Next month padding
     const remaining = 42 - result.length;
     for (let d = 1; d <= remaining; d++) {
       result.push({
@@ -70,12 +79,11 @@ export default function Calendar() {
   };
 
   const goToday = () => {
-    setYear(now.getFullYear());
-    setMonth(now.getMonth());
-    setSelectedDate(now.toISOString().slice(0, 10));
+    const n = new Date();
+    setYear(n.getFullYear());
+    setMonth(n.getMonth());
+    setSelectedDate(n.toISOString().slice(0, 10));
   };
-
-  const todayStr = now.toISOString().slice(0, 10);
 
   return (
     <div className="space-y-4 animate-fadeIn">
@@ -168,11 +176,13 @@ export default function Calendar() {
         {/* Day detail */}
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-4">
           <h3 className="text-sm font-semibold mb-3">
-            {new Date(selectedDate + "T12:00:00").toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-            })}
+            {selectedDate !== "2024-01-01" || mounted
+              ? new Date(selectedDate + "T12:00:00").toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                })
+              : "..."}
           </h3>
 
           {selectedEvents.length === 0 ? (

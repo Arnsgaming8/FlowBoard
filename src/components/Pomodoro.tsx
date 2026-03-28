@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, startTransition } from "react";
 import { useApp } from "@/lib/store";
 import { uid, formatTime } from "@/lib/utils";
 
@@ -118,8 +118,11 @@ export default function Pomodoro() {
   const circumference = 2 * Math.PI * 120;
   const strokeDashoffset = circumference * (1 - progress);
 
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const todaySessions = state.pomodoroSessions.filter((s) => s.completedAt.startsWith(todayStr));
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => startTransition(() => setMounted(true)), []);
+
+  const todayStr = mounted ? new Date().toISOString().slice(0, 10) : "";
+  const todaySessions = mounted ? state.pomodoroSessions.filter((s) => s.completedAt.startsWith(todayStr)) : [];
   const todayWorkMinutes = todaySessions
     .filter((s) => s.type === "work")
     .reduce((sum, s) => sum + s.duration / 60, 0);
