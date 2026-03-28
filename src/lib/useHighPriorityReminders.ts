@@ -17,7 +17,7 @@ export function useHighPriorityReminders(boards: Board[]) {
   const { showToast } = useToast();
   const remindersRef = useRef<Map<string, TaskReminderState>>(new Map());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const permissionRequested = useRef(false);
+  const swRegistered = useRef(false);
 
   const getHighPriorityTasks = useCallback(() => {
     const tasks: { taskId: string; title: string; boardName: string }[] = [];
@@ -35,16 +35,37 @@ export function useHighPriorityReminders(boards: Board[]) {
   }, [boards]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (permissionRequested.current) return;
-    permissionRequested.current = true;
-    if ("Notification" in window && Notification.permission === "default") {
+    if (typeof window === "undefined" || swRegistered.current) return;
+    swRegistered.current = true;
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/FlowBoard/sw.js").then(() => {
+        if ("Notification" in window && Notification.permission === "default") {
+          Notification.requestPermission();
+        }
+      }).catch(() => {});
+    } else if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
   }, []);
 
   useEffect(() => {
-    const check = () => {
+    if (typeof window === "undefined") return;
+    const channel = new BroadcastChannel("flowboard-reminders");
+    channel.onmessage = (event) => {
+      if (event.data?.type === "DISMISS_TASK") {
+        const state = remindersRef.current.get(event.data.taskId);
+        if (state) state.dismissed = true;
+      } else if (event.data?.type === "SNOOZE_TASK") {
+        const state = remindersRef.current.get(event.data.taskId);
+        if (state) state.snoozedUntil = Date.now() + SNOOZE_DURATION;
+      }
+    };
+    return () => channel.close();
+  }, []);
+
+  useEffect(() => {
+    const check = async () => {
       const now = Date.now();
       const highPriorityTasks = getHighPriorityTasks();
 
@@ -62,15 +83,25 @@ export function useHighPriorityReminders(boards: Board[]) {
         state.lastNotified = now;
 
         if ("Notification" in window && Notification.permission === "granted") {
-          const notification = new Notification("High Priority Task", {
-            body: `"${title}" in ${boardName} needs your attention!`,
-            tag: `priority-${taskId}`,
-            requireInteraction: true,
-          });
-          notification.onclick = () => {
-            window.focus();
-            notification.close();
-          };
+          try {
+            const registration = await navigator.serviceWorker.ready;
+            await registration.showNotification("High Priority Task", {
+              body: `"${title}" in ${boardName} needs your attention!`,
+              tag: `priority-${taskId}`,
+              requireInteraction: true,
+              data: { taskId },
+              actions: [
+                { action: "dismiss", title: "I'll Do It" },
+                { action: "snooze", title: "I Know, Wait!" },
+              ],
+            } as NotificationOptions & { actions: { action: string; title: string }[] });
+          } catch {
+            new Notification("High Priority Task", {
+              body: `"${title}" in ${boardName} needs your attention!`,
+              tag: `priority-${taskId}`,
+              requireInteraction: true,
+            }).onclick = () => window.focus();
+          }
         }
 
         showToast(
