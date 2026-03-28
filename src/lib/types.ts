@@ -66,11 +66,18 @@ export interface PomodoroSession {
   completedAt: string;
 }
 
+export interface QuickLink {
+  id: string;
+  name: string;
+  url: string;
+}
+
 export interface AppState {
   boards: Board[];
   notes: Note[];
   events: CalendarEvent[];
   pomodoroSessions: PomodoroSession[];
+  quickLinks: QuickLink[];
   darkMode: boolean;
   currentView: View;
   activeBoardId: string | null;
@@ -103,6 +110,8 @@ export type AppAction =
   | { type: "UPDATE_EVENT"; payload: CalendarEvent }
   | { type: "DELETE_EVENT"; payload: string }
   | { type: "ADD_POMODORO_SESSION"; payload: PomodoroSession }
+  | { type: "ADD_QUICK_LINK"; payload: QuickLink }
+  | { type: "DELETE_QUICK_LINK"; payload: string }
   | { type: "IMPORT_DATA"; payload: Partial<AppState> };
 
 export const DEFAULT_COLUMNS: Column[] = [

@@ -65,6 +65,9 @@ const NAV_ITEMS: { id: View; label: string; icon: React.ReactNode }[] = [
 export default function Sidebar() {
   const { state, dispatch, setView } = useApp();
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showAddLink, setShowAddLink] = useState(false);
+  const [linkName, setLinkName] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
 
   const handleImport = useCallback(() => {
     const input = document.createElement("input");
@@ -150,6 +153,52 @@ export default function Sidebar() {
         ))}
       </nav>
 
+      <div className="px-3 py-2 border-t border-neutral-200 dark:border-neutral-800">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-neutral-500 px-3">Quick Links</span>
+          <button
+            onClick={() => setShowAddLink(true)}
+            className="p-1 text-neutral-400 hover:text-indigo-500 transition-colors"
+            title="Add site"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </button>
+        </div>
+        <div className="space-y-0.5 max-h-40 overflow-y-auto">
+          {state.quickLinks.length === 0 ? (
+            <p className="text-xs text-neutral-400 px-3 py-1">No sites added</p>
+          ) : (
+            state.quickLinks.map((link) => (
+              <a
+                key={link.id}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors group"
+              >
+                <svg className="w-4 h-4 shrink-0 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-2.813a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 006.364 6.364l1.757-1.757" />
+                </svg>
+                <span className="truncate flex-1">{link.name}</span>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    dispatch({ type: "DELETE_QUICK_LINK", payload: link.id });
+                  }}
+                  className="p-0.5 text-neutral-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </a>
+            ))
+          )}
+        </div>
+      </div>
+
       <div className="p-3 border-t border-neutral-200 dark:border-neutral-800 space-y-1">
         <button
           onClick={() => dispatch({ type: "TOGGLE_DARK_MODE" })}
@@ -217,6 +266,74 @@ export default function Sidebar() {
           Reset Data
         </button>
       </div>
+
+      {showAddLink && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setShowAddLink(false)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div
+            className="relative bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl p-6 w-full max-w-sm animate-scaleIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold mb-4">Add Site</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-neutral-500 mb-1 block">Name</label>
+                <input
+                  type="text"
+                  value={linkName}
+                  onChange={(e) => setLinkName(e.target.value)}
+                  placeholder="e.g. Gmail"
+                  className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg outline-none focus:border-indigo-500 text-sm"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-neutral-500 mb-1 block">URL</label>
+                <input
+                  type="url"
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  placeholder="https://mail.google.com"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      if (!linkName.trim() || !linkUrl.trim()) return;
+                      let url = linkUrl.trim();
+                      if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+                      dispatch({ type: "ADD_QUICK_LINK", payload: { id: uid(), name: linkName.trim(), url } });
+                      setLinkName("");
+                      setLinkUrl("");
+                      setShowAddLink(false);
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg outline-none focus:border-indigo-500 text-sm"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setShowAddLink(false)}
+                className="px-4 py-2 text-sm rounded-lg bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (!linkName.trim() || !linkUrl.trim()) return;
+                  let url = linkUrl.trim();
+                  if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+                  dispatch({ type: "ADD_QUICK_LINK", payload: { id: uid(), name: linkName.trim(), url } });
+                  setLinkName("");
+                  setLinkUrl("");
+                  setShowAddLink(false);
+                }}
+                className="px-4 py-2 text-sm rounded-lg bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

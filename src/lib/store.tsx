@@ -18,6 +18,7 @@ const defaultState: AppState = {
   notes: [],
   events: [],
   pomodoroSessions: [],
+  quickLinks: [],
   darkMode: true,
   currentView: "dashboard",
   activeBoardId: null,
@@ -188,6 +189,10 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, events: state.events.filter((e) => e.id !== action.payload) };
     case "ADD_POMODORO_SESSION":
       return { ...state, pomodoroSessions: [...state.pomodoroSessions, action.payload] };
+    case "ADD_QUICK_LINK":
+      return { ...state, quickLinks: [...state.quickLinks, action.payload] };
+    case "DELETE_QUICK_LINK":
+      return { ...state, quickLinks: state.quickLinks.filter((l) => l.id !== action.payload) };
     case "IMPORT_DATA":
       return { ...state, ...action.payload, commandPaletteOpen: false };
     default:
