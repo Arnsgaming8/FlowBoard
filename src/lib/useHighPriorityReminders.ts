@@ -14,9 +14,10 @@ interface TaskReminderState {
 }
 
 export function useHighPriorityReminders(boards: Board[]) {
-  const { showToast, dismissToast } = useToast();
+  const { showToast } = useToast();
   const remindersRef = useRef<Map<string, TaskReminderState>>(new Map());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const permissionRequested = useRef(false);
 
   const getHighPriorityTasks = useCallback(() => {
     const tasks: { taskId: string; title: string; boardName: string }[] = [];
@@ -32,6 +33,15 @@ export function useHighPriorityReminders(boards: Board[]) {
     }
     return tasks;
   }, [boards]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (permissionRequested.current) return;
+    permissionRequested.current = true;
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
 
   useEffect(() => {
     const check = () => {
@@ -50,6 +60,19 @@ export function useHighPriorityReminders(boards: Board[]) {
         if (now - state.lastNotified < REMINDER_INTERVAL) continue;
 
         state.lastNotified = now;
+
+        if ("Notification" in window && Notification.permission === "granted") {
+          const notification = new Notification("High Priority Task", {
+            body: `"${title}" in ${boardName} needs your attention!`,
+            tag: `priority-${taskId}`,
+            requireInteraction: true,
+          });
+          notification.onclick = () => {
+            window.focus();
+            notification.close();
+          };
+        }
+
         showToast(
           `High priority: "${title}" in ${boardName}`,
           "error",
@@ -75,7 +98,6 @@ export function useHighPriorityReminders(boards: Board[]) {
         );
       }
 
-      // Clean up reminders for completed/deleted tasks
       const activeIds = new Set(highPriorityTasks.map((t) => t.taskId));
       for (const [id] of remindersRef.current) {
         if (!activeIds.has(id)) remindersRef.current.delete(id);
