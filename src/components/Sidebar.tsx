@@ -174,8 +174,6 @@ export default function Sidebar() {
               <a
                 key={link.id}
                 href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors group"
               >
                 <svg className="w-4 h-4 shrink-0 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
