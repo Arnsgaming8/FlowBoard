@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, startTransition } from "react
 import { useApp } from "@/lib/store";
 import { uid, formatTime } from "@/lib/utils";
 
-const TIMER_PRESETS = {
+const DEFAULT_PRESETS = {
   work: { duration: 25 * 60, label: "Focus", color: "#ef4444" },
   shortBreak: { duration: 5 * 60, label: "Short Break", color: "#22c55e" },
   longBreak: { duration: 15 * 60, label: "Long Break", color: "#6366f1" },
@@ -14,15 +14,16 @@ type TimerType = "work" | "shortBreak" | "longBreak";
 
 export default function Pomodoro() {
   const { state, dispatch } = useApp();
+  const [presets, setPresets] = useState(DEFAULT_PRESETS);
   const [timerType, setTimerType] = useState<TimerType>("work");
-  const [timeLeft, setTimeLeft] = useState(TIMER_PRESETS.work.duration);
+  const [timeLeft, setTimeLeft] = useState(presets.work.duration);
   const [isRunning, setIsRunning] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
   const [sessionsCount, setSessionsCount] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const preset = TIMER_PRESETS[timerType];
+  const preset = presets[timerType];
   const progress = 1 - timeLeft / preset.duration;
 
   const playSound = useCallback(() => {
@@ -54,7 +55,7 @@ export default function Pomodoro() {
         id: uid(),
         taskId: taskTitle || "untitled",
         taskTitle: taskTitle || "Focus Session",
-        duration: preset.duration,
+        duration: presets[timerType].duration,
         type: timerType,
         completedAt: new Date().toISOString(),
       },
@@ -63,16 +64,16 @@ export default function Pomodoro() {
     if (timerType === "work") {
       if ((sessionsCount + 1) % 4 === 0) {
         setTimerType("longBreak");
-        setTimeLeft(TIMER_PRESETS.longBreak.duration);
+        setTimeLeft(presets.longBreak.duration);
       } else {
         setTimerType("shortBreak");
-        setTimeLeft(TIMER_PRESETS.shortBreak.duration);
+        setTimeLeft(presets.shortBreak.duration);
       }
     } else {
       setTimerType("work");
-      setTimeLeft(TIMER_PRESETS.work.duration);
+      setTimeLeft(presets.work.duration);
     }
-  }, [playSound, dispatch, taskTitle, preset.duration, timerType, sessionsCount]);
+  }, [playSound, dispatch, taskTitle, presets, timerType, sessionsCount]);
 
   const onCompleteRef = useRef(completeSession);
 
@@ -112,7 +113,7 @@ export default function Pomodoro() {
   const switchType = (type: TimerType) => {
     setIsRunning(false);
     setTimerType(type);
-    setTimeLeft(TIMER_PRESETS[type].duration);
+    setTimeLeft(presets[type].duration);
   };
 
   const circumference = 2 * Math.PI * 120;
@@ -140,7 +141,7 @@ export default function Pomodoro() {
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-8 flex flex-col items-center">
           {/* Type selector */}
           <div className="flex gap-2 mb-8">
-            {(Object.keys(TIMER_PRESETS) as TimerType[]).map((type) => (
+            {(Object.keys(presets) as TimerType[]).map((type) => (
               <button
                 key={type}
                 onClick={() => switchType(type)}
@@ -149,10 +150,37 @@ export default function Pomodoro() {
                     ? "text-white"
                     : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
                 }`}
-                style={timerType === type ? { backgroundColor: TIMER_PRESETS[type].color } : {}}
+                style={timerType === type ? { backgroundColor: presets[type].color } : {}}
               >
-                {TIMER_PRESETS[type].label}
+                {presets[type].label} · {presets[type].duration / 60}m
               </button>
+            ))}
+          </div>
+
+          {/* Custom time inputs */}
+          <div className="flex gap-3 mb-6">
+            {(Object.keys(presets) as TimerType[]).map((type) => (
+              <div key={type} className="flex flex-col items-center gap-1">
+                <label className="text-[10px] text-neutral-500">{presets[type].label}</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={presets[type].duration / 60}
+                  onChange={(e) => {
+                    const mins = Math.max(1, Math.min(120, Number(e.target.value) || 1));
+                    setPresets((p) => ({
+                      ...p,
+                      [type]: { ...p[type], duration: mins * 60 },
+                    }));
+                    if (timerType === type && !isRunning) {
+                      setTimeLeft(mins * 60);
+                    }
+                  }}
+                  disabled={isRunning}
+                  className="w-16 px-2 py-1 text-center text-sm bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg outline-none focus:border-indigo-500 disabled:opacity-50"
+                />
+              </div>
             ))}
           </div>
 
@@ -281,7 +309,7 @@ export default function Pomodoro() {
                   >
                     <div
                       className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: TIMER_PRESETS[s.type].color }}
+                      style={{ backgroundColor: presets[s.type].color }}
                     />
                     <span className="flex-1 truncate">{s.taskTitle}</span>
                     <span className="text-xs text-neutral-500">{s.duration / 60}m</span>
