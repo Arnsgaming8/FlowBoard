@@ -62,7 +62,7 @@ const NAV_ITEMS: { id: View; label: string; icon: React.ReactNode }[] = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onLogout }: { onLogout?: () => void }) {
   const { state, dispatch, setView } = useApp();
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showAddLink, setShowAddLink] = useState(false);
@@ -263,6 +263,18 @@ export default function Sidebar() {
           </svg>
           Reset Data
         </button>
+
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+            </svg>
+            Sign Out
+          </button>
+        )}
       </div>
 
       {showAddLink && (
