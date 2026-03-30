@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const { initDB } = require("./db");
 const authRoutes = require("./auth");
+const dataRoutes = require("./data");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -18,6 +19,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/data", dataRoutes);
 
 async function start() {
   await initDB();

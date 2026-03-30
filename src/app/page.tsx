@@ -83,7 +83,7 @@ export default function Home() {
   }
 
   return (
-    <AppProvider>
+    <AppProvider token={authToken}>
       <ToastProvider>
         <AppContent onLogout={handleLogout} />
       </ToastProvider>

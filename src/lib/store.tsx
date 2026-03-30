@@ -5,11 +5,12 @@ import {
   useContext,
   useReducer,
   useEffect,
+  useRef,
   type ReactNode,
   useCallback,
 } from "react";
 import type { AppState, AppAction, View } from "./types";
-import { uid } from "./utils";
+import { loadData, saveData } from "./api";
 
 const STORAGE_KEY = "flowboard-state";
 
@@ -206,24 +207,56 @@ const AppContext = createContext<{
   setView: (v: View) => void;
 } | null>(null);
 
-export function AppProvider({ children }: { children: ReactNode }) {
+export function AppProvider({ children, token }: { children: ReactNode; token?: string | null }) {
   const [state, dispatch] = useReducer(appReducer, defaultState);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tokenRef = useRef(token);
 
+  useEffect(() => { tokenRef.current = token; }, [token]);
+
+  // Load from server on mount (if token), then fall back to localStorage
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        dispatch({ type: "HYDRATE", payload: { ...defaultState, ...parsed, commandPaletteOpen: false } });
+    async function init() {
+      let hydrated = false;
+      if (token) {
+        try {
+          const serverData = await loadData(token);
+          if (serverData && typeof serverData === "object") {
+            dispatch({ type: "HYDRATE", payload: { ...defaultState, ...serverData, commandPaletteOpen: false } });
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(serverData));
+            hydrated = true;
+          }
+        } catch {
+          // server unreachable, fall back to localStorage
+        }
       }
-    } catch {
-      // ignore
+      if (!hydrated) {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            dispatch({ type: "HYDRATE", payload: { ...defaultState, ...parsed, commandPaletteOpen: false } });
+          }
+        } catch {
+          // ignore
+        }
+      }
     }
-  }, []);
+    init();
+  }, [token]);
 
+  // Save to localStorage + debounce save to server
   useEffect(() => {
     const { commandPaletteOpen: _, ...toSave } = state;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+
+    if (!tokenRef.current) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      if (tokenRef.current) {
+        saveData(tokenRef.current, toSave).catch(() => {});
+      }
+    }, 2000);
   }, [state]);
 
   useEffect(() => {
