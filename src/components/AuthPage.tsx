@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { login, register, recover, resetPassword } from "@/lib/api";
 
+const UPDATE_NOTICE_KEY = "flowboard-update-dismissed";
+
 interface AuthPageProps {
   onAuth: (token: string, user: { id: number; email: string }) => void;
 }
@@ -15,6 +17,7 @@ export default function AuthPage({ onAuth }: AuthPageProps) {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showUpdateNotice] = useState(() => !localStorage.getItem(UPDATE_NOTICE_KEY));
 
   const resetToken = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("reset") : null;
 
@@ -31,6 +34,7 @@ export default function AuthPage({ onAuth }: AuthPageProps) {
     try {
       if (mode === "login") {
         const data = await login(email, password);
+        localStorage.setItem(UPDATE_NOTICE_KEY, "1");
         onAuth(data.token, data.user);
       } else if (mode === "register") {
         if (password.length < 6) {
@@ -76,6 +80,12 @@ export default function AuthPage({ onAuth }: AuthPageProps) {
           </h1>
           <p className="text-neutral-500 text-sm mt-1">{titles[mode]}</p>
         </div>
+
+        {showUpdateNotice && (
+          <div className="bg-orange-500/10 border border-orange-500/30 text-orange-400 text-sm rounded-lg px-4 py-3 mb-4">
+            If you got signed out, it is likely because of a site update.
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 space-y-4">
           {mode !== "reset" && (
