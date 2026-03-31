@@ -8,10 +8,11 @@ const { authMiddleware } = require("./middleware");
 
 const router = express.Router();
 
+const smtpPort = Number(process.env.SMTP_PORT) || 587;
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
+  port: smtpPort,
+  secure: smtpPort === 465,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -106,7 +107,7 @@ router.post("/recover", async (req, res) => {
     const recoveryUrl = `${frontendUrl}?reset=${token}`;
 
     await transporter.sendMail({
-      from: process.env.SMTP_USER,
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: email,
       subject: "FlowBoard - Password Recovery",
       html: `<p>Click the link below to reset your password:</p><p><a href="${recoveryUrl}">${recoveryUrl}</a></p><p>This link expires in 1 hour.</p>`,
