@@ -17,6 +17,9 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
 });
 
 function createToken(userId) {
@@ -89,6 +92,8 @@ router.post("/recover", async (req, res) => {
       return res.status(400).json({ error: "Email required" });
     }
 
+    console.log("Recover request for:", email);
+
     const result = await pool.query("SELECT id FROM users WHERE email = $1", [email.toLowerCase()]);
     if (result.rows.length === 0) {
       return res.json({ message: "If that email exists, a recovery link was sent" });
@@ -106,12 +111,14 @@ router.post("/recover", async (req, res) => {
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
     const recoveryUrl = `${frontendUrl}?reset=${token}`;
 
+    console.log("Sending email to:", email, "from:", process.env.SMTP_FROM);
     await transporter.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: email,
       subject: "FlowBoard - Password Recovery",
       html: `<p>Click the link below to reset your password:</p><p><a href="${recoveryUrl}">${recoveryUrl}</a></p><p>This link expires in 1 hour.</p>`,
     });
+    console.log("Email sent successfully");
 
     res.json({ message: "If that email exists, a recovery link was sent" });
   } catch (err) {
