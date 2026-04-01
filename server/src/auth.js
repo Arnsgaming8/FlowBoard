@@ -116,7 +116,7 @@ router.post("/recover", async (req, res) => {
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: email,
       subject: "FlowBoard - Password Recovery",
-      html: `<p>Click the link below to reset your password:</p><p><a href="${recoveryUrl}">${recoveryUrl}</a></p><p>This link expires in 1 hour.</p>`,
+      html: `<p>Click the link below to reset your password:</p><p><a clicktracking="off" href="${recoveryUrl}">${recoveryUrl}</a></p><p>This link expires in 1 hour.</p>`,
     });
     console.log("Email sent successfully");
 
