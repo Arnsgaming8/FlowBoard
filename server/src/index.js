@@ -8,8 +8,10 @@ const dataRoutes = require("./data");
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+const allowedOrigin = process.env.FRONTEND_URL || "https://arnsgaming8.github.io/FlowBoard";
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "*",
+  origin: [allowedOrigin, "https://arnsgaming8.github.io"],
   credentials: true,
 }));
 app.use(express.json());
